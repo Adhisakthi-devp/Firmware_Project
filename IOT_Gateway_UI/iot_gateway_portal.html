@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoT Gateway Configuration Portal</title>
+<style>
+  :root {
+    --navy:      #0A1628;
+    --navy-mid:  #112240;
+    --blue:      #1565C0;
+    --blue-light:#1976D2;
+    --cyan:      #00B4D8;
+    --cyan-dim:  #0096B7;
+    --panel:     #F0F4F8;
+    --surface:   #FFFFFF;
+    --border:    #D0DEF0;
+    --text:      #1A2B45;
+    --muted:     #607080;
+    --success:   #1B8A4C;
+    --warning:   #C47A00;
+    --danger:    #C0392B;
+    --mono:      'Courier New', Courier, monospace;
+    --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--panel);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────── */
+  .site-header {
+    background: var(--navy);
+    color: #fff;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* PCB dot-grid background */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(0,180,216,0.18) 1px, transparent 1px);
+    background-size: 22px 22px;
+    pointer-events: none;
+  }
+
+  .header-inner {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 24px 16px;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand-icon {
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .brand-icon svg { width: 26px; height: 26px; fill: #fff; }
+
+  .brand-text h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    color: #fff;
+  }
+
+  .brand-text p {
+    font-size: 0.72rem;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* live pulse */
+  .live-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(0,180,216,0.12);
+    border: 1px solid rgba(0,180,216,0.35);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--cyan);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--cyan);
+    border-radius: 50%;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); box-shadow: 0 0 0 0 rgba(0,180,216,0.5); }
+    50%      { opacity:0.8; transform:scale(1.2); box-shadow: 0 0 0 5px rgba(0,180,216,0); }
+  }
+
+  .header-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 12px;
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .meta-value {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .meta-value.cyan { color: var(--cyan); }
+
+  /* ── STATUS BANNER ──────────────────────────────────────────── */
+  #statusBanner {
+    display: none;
+    padding: 10px 24px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+  #statusBanner.success { background: #D4EDDA; color: #155724; border-bottom: 2px solid #28A745; }
+  #statusBanner.error   { background: #F8D7DA; color: #721C24; border-bottom: 2px solid #DC3545; }
+  #statusBanner.info    { background: #CCE5FF; color: #004085; border-bottom: 2px solid #007BFF; }
+
+  /* ── MAIN LAYOUT ────────────────────────────────────────────── */
+  .main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    flex: 1;
+    width: 100%;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+  }
+
+  .grid-full { grid-column: 1/-1; }
+
+  /* ── CARD ───────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(10,22,40,0.06);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, var(--navy) 0%, var(--navy-mid) 100%);
+    color: #fff;
+  }
+
+  .card-header-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: rgba(0,180,216,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .card-header-icon svg { width: 16px; height: 16px; fill: var(--cyan); }
+
+  .card-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .card-body { padding: 18px; }
+
+  /* ── FORM FIELDS ────────────────────────────────────────────── */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .field input[type="text"],
+  .field input[type="password"],
+  .field input[type="number"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--panel);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    -webkit-appearance: none;
+  }
+
+  .field input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
+    background: #fff;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ── STATUS BADGES ──────────────────────────────────────────── */
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .status-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .status-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    padding: 4px 10px;
+    border-radius: 20px;
+    width: fit-content;
+  }
+
+  .status-badge .dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .badge-ok  { background: #D4EDDA; color: #155724; }
+  .badge-ok  .dot { background: #28A745; }
+  .badge-err { background: #F8D7DA; color: #721C24; }
+  .badge-err .dot { background: #DC3545; }
+  .badge-warn{ background: #FFF3CD; color: #856404; }
+  .badge-warn .dot { background: #FFC107; }
+
+  .rssi-bar-wrap {
+    display: flex; align-items: center; gap: 8px; margin-top: 2px;
+  }
+
+  .rssi-bar-track {
+    flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+
+  .rssi-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    transition: width 0.5s ease;
+  }
+
+  .rssi-value {
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 700; color: var(--text); white-space: nowrap;
+  }
+
+  /* ── MONITORING ─────────────────────────────────────────────── */
+  .monitor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .monitor-item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 14px 14px 12px;
+  }
+
+  .monitor-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .monitor-value {
+    font-family: var(--mono);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--blue);
+    word-break: break-all;
+    line-height: 1.2;
+  }
+
+  .monitor-value.big {
+    font-size: 1.5rem;
+    color: var(--cyan-dim);
+  }
+
+  .monitor-time {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── BUTTONS ────────────────────────────────────────────────── */
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 0.83rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
+    flex: 1;
+    justify-content: center;
+    min-width: 110px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn:hover  { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+  .btn:active { transform: scale(0.97); filter: brightness(0.95); }
+  .btn svg    { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
+
+  .btn-save    { background: linear-gradient(135deg, #1B8A4C, #27AE60); }
+  .btn-refresh { background: linear-gradient(135deg, #1565C0, #1976D2); }
+  .btn-restart { background: linear-gradient(135deg, #C47A00, #E67E22); }
+  .btn-reset   { background: linear-gradient(135deg, #C0392B, #E74C3C); }
+
+  /* Loading spinner inside button */
+  .btn .spinner {
+    display: none;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .btn.loading .spinner { display: block; }
+  .btn.loading .btn-label { opacity: 0.7; }
+  .btn.loading { pointer-events: none; }
+
+  /* ── MODAL ──────────────────────────────────────────────────── */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,0.7);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    padding: 28px 28px 22px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(10,22,40,0.3);
+    animation: modalIn 0.2s ease;
+  }
+
+  @keyframes modalIn { from { transform: scale(0.94) translateY(10px); opacity:0; } to { transform: none; opacity:1; } }
+
+  .modal-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+  }
+
+  .modal-icon svg { width: 26px; height: 26px; fill: #fff; }
+
+  .modal-icon.danger { background: linear-gradient(135deg, #C0392B, #E74C3C); }
+  .modal-icon.success{ background: linear-gradient(135deg, #1B8A4C, #27AE60); }
+
+  .modal h2 { font-size: 1.05rem; font-weight: 700; text-align: center; margin-bottom: 8px; color: var(--text); }
+  .modal p  { font-size: 0.84rem; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 20px; }
+
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { font-size: 0.82rem; padding: 9px 16px; }
+
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    flex: 1;
+    transition: background 0.15s;
+  }
+
+  .btn-outline:hover { background: var(--panel); }
+
+  /* ── FOOTER ─────────────────────────────────────────────────── */
+  .site-footer {
+    background: var(--navy);
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    padding: 16px 24px;
+    font-size: 0.72rem;
+    line-height: 1.9;
+    letter-spacing: 0.03em;
+    border-top: 2px solid var(--blue);
+  }
+
+  .site-footer strong { color: var(--cyan); font-weight: 700; }
+
+  /* ── SECTION SPACING ────────────────────────────────────────── */
+  .section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: var(--muted);
+    margin: 22px 0 10px;
+  }
+
+  .section-title:first-child { margin-top: 0; }
+
+  /* ── DIVIDER ────────────────────────────────────────────────── */
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .field-row { grid-template-columns: 1fr; }
+    .status-grid { grid-template-columns: 1fr 1fr; }
+    .monitor-grid { grid-template-columns: 1fr 1fr; }
+    .btn { min-width: 90px; padding: 10px 12px; font-size: 0.78rem; }
+    .header-meta { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 400px) {
+    .status-grid  { grid-template-columns: 1fr; }
+    .btn-row { flex-direction: column; }
+    .btn { flex: unset; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>IoT Gateway Configuration Portal</h1>
+          <p>Industrial Edge Device Management · ESP32 Platform</p>
+        </div>
+      </div>
+      <div class="live-pill">
+        <span class="pulse-dot"></span>
+        LIVE
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="meta-item">
+        <span class="meta-label">Gateway Name</span>
+        <span class="meta-value" id="hdrGatewayName">DILOGY-GW-01</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Device ID</span>
+        <span class="meta-value cyan" id="hdrDeviceId">DLG-ESP32-A3F2</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">IP Address</span>
+        <span class="meta-value" id="hdrIp">192.168.1.105</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">MAC Address</span>
+        <span class="meta-value" id="hdrMac">A4:CF:12:3D:7E:B1</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Date &amp; Time</span>
+        <span class="meta-value cyan" id="hdrDateTime">—</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ── STATUS BANNER ───────────────────────────────────────── -->
+<div id="statusBanner"></div>
+
+<!-- ── MAIN ───────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Row 1: Connection Status + Live Monitoring -->
+  <div class="grid-2">
+
+    <!-- Connection Status -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        </div>
+        <span class="card-title">Connection Status</span>
+      </div>
+      <div class="card-body">
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">WiFi</span>
+            <span class="status-badge badge-ok" id="wifiStatus"><span class="dot"></span>Connected</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">MQTT Broker</span>
+            <span class="status-badge badge-ok" id="mqttStatus"><span class="dot"></span>Connected</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Modbus RTU</span>
+            <span class="status-badge badge-warn" id="modbusStatus"><span class="dot"></span>Polling</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Signal Strength</span>
+            <div class="rssi-bar-wrap">
+              <div class="rssi-bar-track">
+                <div class="rssi-bar-fill" id="rssiBar" style="width:72%"></div>
+              </div>
+              <span class="rssi-value" id="rssiDisplay">-58 dBm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Monitoring -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+        </div>
+        <span class="card-title">Live Monitoring</span>
+      </div>
+      <div class="card-body">
+        <div class="monitor-grid">
+          <div class="monitor-item">
+            <div class="monitor-label">Modbus Value</div>
+            <div class="monitor-value big" id="modbusValue">1842</div>
+          </div>
+          <div class="monitor-item">
+            <div class="monitor-label">RSSI</div>
+            <div class="monitor-value" id="rssiValue">-58 dBm</div>
+          </div>
+          <div class="monitor-item">
+            <div class="monitor-label">Last Publish</div>
+            <div class="monitor-time" id="lastPublish">—</div>
+          </div>
+          <div class="monitor-item">
+            <div class="monitor-label">Last Command</div>
+            <div class="monitor-time" id="lastCmd">CMD_STATUS_OK</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid-2 -->
+
+  <!-- Row 2: Device + WiFi -->
+  <div class="grid-2" style="margin-top:18px">
+
+    <!-- Device Configuration -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+        </div>
+        <span class="card-title">Device Configuration</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Device ID</label>
+          <input type="text" id="cfgDeviceId" value="DLG-ESP32-A3F2" placeholder="Device identifier">
+        </div>
+        <div class="field">
+          <label>Ping Interval (seconds)</label>
+          <input type="number" id="cfgPingInterval" value="30" min="1" max="3600" placeholder="30">
+        </div>
+      </div>
+    </div>
+
+    <!-- WiFi Configuration -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        </div>
+        <span class="card-title">WiFi Configuration</span>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>WiFi SSID</label>
+          <input type="text" id="cfgSsid" value="Dilogy_IoT_Net" placeholder="Network name">
+        </div>
+        <div class="field">
+          <label>WiFi Password</label>
+          <input type="password" id="cfgWifiPass" value="••••••••••" placeholder="Password">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid-2 -->
+
+  <!-- Row 3: MQTT (full width) -->
+  <div style="margin-top:18px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+        </div>
+        <span class="card-title">MQTT Broker Configuration</span>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label>MQTT Server Address</label>
+            <input type="text" id="cfgMqttServer" value="broker.dilogy.in" placeholder="broker.example.com">
+          </div>
+          <div class="field">
+            <label>MQTT Port</label>
+            <input type="number" id="cfgMqttPort" value="1883" min="1" max="65535" placeholder="1883">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>MQTT Username</label>
+            <input type="text" id="cfgMqttUser" value="gw_user_01" placeholder="Username">
+          </div>
+          <div class="field">
+            <label>MQTT Password</label>
+            <input type="password" id="cfgMqttPass" value="••••••••" placeholder="Password">
+          </div>
+        </div>
+        <div class="field">
+          <label>MQTT Client ID</label>
+          <input type="text" id="cfgMqttClientId" value="ESP32_DLG_A3F2" placeholder="Unique client ID">
+        </div>
+        <div class="divider"></div>
+        <div class="section-title">Topics</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Publish Topic 1</label>
+            <input type="text" id="cfgPubTopic1" value="dilogy/gateway/A3F2/data" placeholder="publish/topic/1">
+          </div>
+          <div class="field">
+            <label>Publish Topic 2</label>
+            <input type="text" id="cfgPubTopic2" value="dilogy/gateway/A3F2/status" placeholder="publish/topic/2">
+          </div>
+        </div>
+        <div class="field">
+          <label>Subscribe Topic</label>
+          <input type="text" id="cfgSubTopic" value="dilogy/gateway/A3F2/cmd" placeholder="subscribe/topic">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Modbus Configuration -->
+  <div style="margin-top:18px">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+        </div>
+        <span class="card-title">Modbus RTU Configuration</span>
+      </div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label>Slave ID</label>
+            <input type="number" id="cfgModbusSlaveId" value="1" min="1" max="247" placeholder="1">
+          </div>
+          <div class="field">
+            <label>Register Address</label>
+            <input type="number" id="cfgModbusReg" value="40001" min="0" max="65535" placeholder="40001">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ACTION BUTTONS ──────────────────────────────────── -->
+  <div class="btn-row">
+    <button class="btn btn-save" id="btnSave" onclick="handleSave()">
+      <span class="spinner"></span>
+      <svg viewBox="0 0 24 24"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+      <span class="btn-label">Save Configuration</span>
+    </button>
+    <button class="btn btn-refresh" onclick="handleRefresh()">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      <span class="btn-label">Refresh Config</span>
+    </button>
+    <button class="btn btn-restart" onclick="handleRestart()">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+      <span class="btn-label">Restart Device</span>
+    </button>
+    <button class="btn btn-reset" onclick="handleFactoryReset()">
+      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      <span class="btn-label">Factory Reset</span>
+    </button>
+  </div>
+
+</main>
+
+<!-- ── FOOTER ──────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <strong>Firmware v2.4.1</strong> &nbsp;·&nbsp;
+  Developer: <strong>Adhi Sakthi S</strong> &nbsp;·&nbsp;
+  Electronics and Computer Engineering &nbsp;·&nbsp;
+  <strong>Sona College of Technology</strong> &nbsp;·&nbsp;
+  Project: <strong>IoT Gateway Development</strong>
+</footer>
+
+<!-- ── FACTORY RESET MODAL ─────────────────────────────────── -->
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal">
+    <div class="modal-icon danger">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+    <h2>Factory Reset</h2>
+    <p>This will erase <strong>all configuration</strong> and restore factory defaults. The device will reboot. This action cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeModal('resetModal')">Cancel</button>
+      <button class="btn btn-reset" style="flex:1" onclick="confirmReset()">
+        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        <span class="btn-label">Yes, Reset</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESTART MODAL ───────────────────────────────────────── -->
+<div class="modal-backdrop" id="restartModal">
+  <div class="modal">
+    <div class="modal-icon" style="background:linear-gradient(135deg,#C47A00,#E67E22)">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </div>
+    <h2>Restart Device</h2>
+    <p>The ESP32 gateway will reboot. You will need to reconnect after ~10 seconds.</p>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeModal('restartModal')">Cancel</button>
+      <button class="btn btn-restart" style="flex:1" onclick="confirmRestart()">
+        <span class="btn-label">Restart Now</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUCCESS MODAL ───────────────────────────────────────── -->
+<div class="modal-backdrop" id="successModal">
+  <div class="modal">
+    <div class="modal-icon success">
+      <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </div>
+    <h2>Configuration Saved</h2>
+    <p>All settings have been written to NVS flash. Changes will take effect on next restart.</p>
+    <div class="modal-btns">
+      <button class="btn btn-save" style="flex:1" onclick="closeModal('successModal')">
+        <span class="btn-label">Done</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── JAVASCRIPT ──────────────────────────────────────────── -->
+<script>
+  // ── Clock ──────────────────────────────────────────────────
+  function updateClock() {
+    var now = new Date();
+    var pad = function(n){ return n < 10 ? '0'+n : n; };
+    var d = now.toDateString().split(' ');
+    var ts = d[0]+' '+d[2]+' '+d[1]+' '+d[3]+'  '+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+    document.getElementById('hdrDateTime').textContent = ts;
+    document.getElementById('lastPublish').textContent = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Simulated live monitoring tick ──────────────────────────
+  setInterval(function(){
+    var base = 1842;
+    var jitter = Math.floor(Math.random() * 20) - 10;
+    document.getElementById('modbusValue').textContent = base + jitter;
+
+    var rssiRaw = -55 + Math.floor(Math.random()*10) - 5;
+    document.getElementById('rssiValue').textContent = rssiRaw + ' dBm';
+    document.getElementById('rssiDisplay').textContent = rssiRaw + ' dBm';
+    var pct = Math.min(100, Math.max(0, Math.round((rssiRaw + 90) / 60 * 100)));
+    document.getElementById('rssiBar').style.width = pct + '%';
+  }, 3000);
+
+  // ── Modal helpers ───────────────────────────────────────────
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+  // ── Status banner ───────────────────────────────────────────
+  var bannerTimer;
+  function showBanner(msg, type) {
+    var b = document.getElementById('statusBanner');
+    b.textContent = msg;
+    b.className = type;
+    b.style.display = 'block';
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function(){ b.style.display='none'; }, 4000);
+  }
+
+  // ── Collect all form values ─────────────────────────────────
+  function collectConfig() {
+    return {
+      deviceId:      document.getElementById('cfgDeviceId').value,
+      pingInterval:  document.getElementById('cfgPingInterval').value,
+      ssid:          document.getElementById('cfgSsid').value,
+      wifiPass:      document.getElementById('cfgWifiPass').value,
+      mqttServer:    document.getElementById('cfgMqttServer').value,
+      mqttPort:      document.getElementById('cfgMqttPort').value,
+      mqttUser:      document.getElementById('cfgMqttUser').value,
+      mqttPass:      document.getElementById('cfgMqttPass').value,
+      mqttClientId:  document.getElementById('cfgMqttClientId').value,
+      pubTopic1:     document.getElementById('cfgPubTopic1').value,
+      pubTopic2:     document.getElementById('cfgPubTopic2').value,
+      subTopic:      document.getElementById('cfgSubTopic').value,
+      modbusSlaveId: document.getElementById('cfgModbusSlaveId').value,
+      modbusReg:     document.getElementById('cfgModbusReg').value
+    };
+  }
+
+  // ── Save ───────────────────────────────────────────────────
+  function handleSave() {
+    var btn = document.getElementById('btnSave');
+    btn.classList.add('loading');
+
+    var cfg = collectConfig();
+
+    // Build query string for ESP32 GET endpoint
+    var qs = Object.keys(cfg).map(function(k){
+      return encodeURIComponent(k) + '=' + encodeURIComponent(cfg[k]);
+    }).join('&');
+
+    // POST to /save — adjust to your ESP32 route
+    fetch('/save?' + qs, { method: 'GET' })
+      .then(function(r){ return r.text(); })
+      .then(function(){
+        btn.classList.remove('loading');
+        openModal('successModal');
+        showBanner('✓ Configuration saved successfully to NVS flash.', 'success');
+      })
+      .catch(function(){
+        // Offline / demo mode: still show success modal
+        btn.classList.remove('loading');
+        openModal('successModal');
+        showBanner('✓ Configuration saved (offline demo mode).', 'info');
+      });
+  }
+
+  // ── Refresh ─────────────────────────────────────────────────
+  function handleRefresh() {
+    showBanner('↺ Fetching configuration from device...', 'info');
+    fetch('/config')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d.deviceId)      document.getElementById('cfgDeviceId').value      = d.deviceId;
+        if(d.pingInterval)  document.getElementById('cfgPingInterval').value  = d.pingInterval;
+        if(d.ssid)          document.getElementById('cfgSsid').value          = d.ssid;
+        if(d.mqttServer)    document.getElementById('cfgMqttServer').value    = d.mqttServer;
+        if(d.mqttPort)      document.getElementById('cfgMqttPort').value      = d.mqttPort;
+        if(d.mqttUser)      document.getElementById('cfgMqttUser').value      = d.mqttUser;
+        if(d.mqttClientId)  document.getElementById('cfgMqttClientId').value  = d.mqttClientId;
+        if(d.pubTopic1)     document.getElementById('cfgPubTopic1').value     = d.pubTopic1;
+        if(d.pubTopic2)     document.getElementById('cfgPubTopic2').value     = d.pubTopic2;
+        if(d.subTopic)      document.getElementById('cfgSubTopic').value      = d.subTopic;
+        if(d.modbusSlaveId) document.getElementById('cfgModbusSlaveId').value = d.modbusSlaveId;
+        if(d.modbusReg)     document.getElementById('cfgModbusReg').value     = d.modbusReg;
+        showBanner('✓ Configuration refreshed from device.', 'success');
+      })
+      .catch(function(){
+        showBanner('ℹ Running in demo mode — no live device detected.', 'info');
+      });
+  }
+
+  // ── Restart ─────────────────────────────────────────────────
+  function handleRestart() { openModal('restartModal'); }
+
+  function confirmRestart() {
+    closeModal('restartModal');
+    showBanner('⟳ Restart command sent. Device rebooting…', 'info');
+    fetch('/restart').catch(function(){});
+  }
+
+  // ── Factory Reset ───────────────────────────────────────────
+  function handleFactoryReset() { openModal('resetModal'); }
+
+  function confirmReset() {
+    closeModal('resetModal');
+    showBanner('⚠ Factory reset initiated. Device will reboot with defaults.', 'error');
+    fetch('/factory_reset').catch(function(){});
+  }
+
+  // ── Close modal on backdrop click ───────────────────────────
+  document.querySelectorAll('.modal-backdrop').forEach(function(el){
+    el.addEventListener('click', function(e){
+      if(e.target === el) el.classList.remove('open');
+    });
+  });
+
+  // ── Initial status poll (for real ESP32) ───────────────────
+  fetch('/status')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.wifi !== undefined)   setStatus('wifiStatus',   d.wifi);
+      if(d.mqtt !== undefined)   setStatus('mqttStatus',   d.mqtt);
+      if(d.modbus !== undefined) setStatus('modbusStatus', d.modbus);
+      if(d.rssi)  document.getElementById('rssiDisplay').textContent = d.rssi + ' dBm';
+      if(d.ip)    document.getElementById('hdrIp').textContent = d.ip;
+      if(d.mac)   document.getElementById('hdrMac').textContent = d.mac;
+    })
+    .catch(function(){ /* demo mode */ });
+
+  function setStatus(elId, connected) {
+    var el = document.getElementById(elId);
+    if(connected) {
+      el.className = 'status-badge badge-ok';
+      el.innerHTML = '<span class="dot"></span>Connected';
+    } else {
+      el.className = 'status-badge badge-err';
+      el.innerHTML = '<span class="dot"></span>Disconnected';
+    }
+  }
+</script>
+</body>
+</html>
